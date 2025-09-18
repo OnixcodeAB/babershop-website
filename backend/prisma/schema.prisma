@@ -1,0 +1,88 @@
+// backend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Service {
+  id              String      @id @default(cuid())
+  name            String
+  description     String?
+  durationMinutes Int
+  priceCents      Int
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  barbers         Barber[]    @relation("BarberServices")
+  appointments    Appointment[]
+}
+
+model Barber {
+  id           String           @id @default(cuid())
+  name         String
+  bio          String?
+  photoUrl     String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  services     Service[]        @relation("BarberServices")
+  timeSlots    TimeSlot[]
+  appointments Appointment[]
+}
+
+model TimeSlot {
+  id        String       @id @default(cuid())
+  barberId  String?
+  start     DateTime
+  end       DateTime
+  isBlocked Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  barber    Barber?      @relation(fields: [barberId], references: [id])
+  bookings  Appointment[]
+
+  @@index([barberId, start])
+}
+
+model Appointment {
+  id          String      @id @default(cuid())
+  clientName  String
+  clientEmail String?
+  clientPhone String?
+  notes       String?
+  status      String      @default("PENDING")
+  source      String?     @default("web")
+  serviceId   String
+  barberId    String?
+  slotId      String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  service     Service     @relation(fields: [serviceId], references: [id])
+  barber      Barber?     @relation(fields: [barberId], references: [id])
+  slot        TimeSlot    @relation(fields: [slotId], references: [id])
+
+  @@index([serviceId])
+  @@index([barberId])
+  @@index([slotId])
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  role               String
+  magicLinkTokenHash String?
+  tokenExpiry        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model MetricEvent {
+  id         String   @id @default(cuid())
+  eventType  String
+  payload    String
+  occurredAt DateTime @default(now())
+}

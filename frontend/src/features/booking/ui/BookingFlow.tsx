@@ -407,7 +407,6 @@ export function BookingFlow() {
     if (slot.barberId) {
       actions.selectSpecificBarber(slot.barberId);
     }
-    setActiveStep('details');
   };
 
   const handleQuickBook = () => {
@@ -1089,4 +1088,6 @@ export function BookingFlow() {
     </div>
   );
 }
+
+
 

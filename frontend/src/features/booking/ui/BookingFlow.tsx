@@ -221,16 +221,16 @@ export function BookingFlow() {
       return;
     }
     if (serviceHydratedRef.current !== state.serviceId) {
-      const targetStep = supportingBarbers.length > 1 ? 'staff' : 'time';
+      const targetStep = 'staff';
       setActiveStep(targetStep);
       serviceHydratedRef.current = state.serviceId ?? null;
     }
   }, [selectedService, supportingBarbers.length, state.serviceId]);
 
-  const staffStepVisible = Boolean(selectedService) && supportingBarbers.length > 1 && state.barberSelectionMode !== 'any';
+  const staffStepVisible = Boolean(selectedService) && supportingBarbers.length > 0;
 
   const visibleSteps = useMemo(() => {
-    return staffStepVisible ? [...STEP_DEFINITIONS] : STEP_DEFINITIONS.filter((step) => step.id !== 'staff');
+    return STEP_DEFINITIONS;
   }, [staffStepVisible]);
 
   useEffect(() => {
@@ -403,10 +403,10 @@ export function BookingFlow() {
   };
 
   const handleSlotSelect = (slot: AvailabilitySlot) => {
-    actions.selectSlot(slot.slotId, slot.barberId ?? state.barberId ?? null);
     if (slot.barberId) {
       actions.selectSpecificBarber(slot.barberId);
     }
+    actions.selectSlot(slot.slotId, slot.barberId ?? state.barberId ?? null);
   };
 
   const handleQuickBook = () => {
@@ -500,7 +500,7 @@ export function BookingFlow() {
 
   const continueLabel = () => {
     if (activeStep === 'service') {
-      return staffStepVisible ? 'Continue to barber selection' : 'Continue to time';
+      return 'Continue to barber selection';
     }
     if (activeStep === 'staff') {
       return state.slotId ? 'Continue to details' : 'Continue to time';
@@ -1088,6 +1088,12 @@ export function BookingFlow() {
     </div>
   );
 }
+
+
+
+
+
+
 
 
 

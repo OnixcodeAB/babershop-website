@@ -17,7 +17,7 @@ export function SlotList({ slots, selectedSlotId, onSelect }: SlotListProps) {
       {slots.map((slot) => (
         <SlotPill
           key={slot.slotId}
-          timeSlot={slot}
+          dataSlot={slot}
           selected={slot.slotId === selectedSlotId}
           onClick={() => onSelect(slot)}
         />
@@ -25,3 +25,4 @@ export function SlotList({ slots, selectedSlotId, onSelect }: SlotListProps) {
     </div>
   );
 }
+

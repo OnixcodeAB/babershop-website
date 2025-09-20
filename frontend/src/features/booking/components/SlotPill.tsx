@@ -3,11 +3,12 @@ import type { AvailabilitySlot } from '../../../entities/slot';
 import { describeSlot } from '../lib';
 
 interface SlotPillProps extends ComponentPropsWithoutRef<'button'> {
-  timeSlot: AvailabilitySlot;
+  slot?: never;
   selected?: boolean;
+  dataSlot: AvailabilitySlot;
 }
 
-export function SlotPill({ timeSlot, selected = false, className = '', ...rest }: SlotPillProps) {
+export function SlotPill({ dataSlot, selected = false, className = '', ...buttonProps }: SlotPillProps) {
   return (
     <button
       type="button"
@@ -16,9 +17,9 @@ export function SlotPill({ timeSlot, selected = false, className = '', ...rest }
           ? 'border-emerald-500 bg-emerald-500/20 text-emerald-100'
           : 'border-slate-800 bg-slate-900/40 text-slate-300 hover:border-slate-700'
       } ${className}`.trim()}
-      {...rest}
+      {...buttonProps}
     >
-      {describeSlot(timeSlot)}
+      {describeSlot(dataSlot)}
     </button>
   );
 }

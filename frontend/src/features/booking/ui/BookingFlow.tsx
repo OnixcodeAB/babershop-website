@@ -1,6 +1,6 @@
 ﻿import type { ChangeEvent, FormEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { Service } from '../../../entities/service';
 import type { Barber } from '../../../entities/barber';
 import type { AvailabilitySlot } from '../../../entities/slot';
@@ -26,7 +26,6 @@ import { formatDateLabel, formatDateTime } from '../../../shared/format';
 import type { BarberProfile } from '../lib/barber-profiles';
 import type { NextAvailableResult } from '../queries/useNextAvailableQuery';
 import type { BarberSelectionMode } from '../types';
-
 const STEP_DEFINITIONS = [
   { id: 'service', label: 'Service', helper: 'Pick the cut, shave, or treatment you need.' },
   { id: 'staff', label: 'Barber', helper: 'Choose your pro—or let us match you.' },
@@ -529,6 +528,14 @@ export function BookingFlow() {
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-10">
+        <div className="mb-4 flex justify-start">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm text-emerald-300 transition hover:text-emerald-200"
+          >
+            ← Back to home
+          </Link>
+        </div>
         <section className="rounded-2xl border border-slate-900/60 bg-slate-900/40 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.45)]">
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -1088,6 +1095,18 @@ export function BookingFlow() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

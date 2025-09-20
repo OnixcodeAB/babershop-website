@@ -16,14 +16,16 @@ export function DayGrid({ days, selectedDate, onSelect }: DayGridProps) {
             type="button"
             key={day.inputValue}
             onClick={() => onSelect(day.inputValue)}
-            className={`rounded-xl border px-3 py-4 text-center text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
-              isSelected ? 'border-emerald-500 bg-emerald-500/20 text-emerald-100' : 'border-slate-800 bg-slate-900/40 hover:border-slate-700'
+            className={`flex h-full w-full flex-col items-center justify-center rounded-xl border px-4 py-4 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
+              isSelected
+                ? 'border-emerald-500 bg-emerald-500/20 text-emerald-100'
+                : 'border-slate-800 bg-slate-900/40 text-slate-300 hover:border-slate-700'
             }`}
           >
-            <span className="block text-xs uppercase tracking-[0.2em] text-slate-500">{day.weekdayLabel}</span>
-            <span className="mt-1 block text-lg font-semibold text-white">{day.dayNumber}</span>
-            <span className="mt-1 block text-xs text-slate-400">{day.monthLabel}</span>
-            {day.isToday ? <span className="mt-1 block text-[10px] uppercase text-emerald-300">Today</span> : null}
+            <span className="text-xs uppercase tracking-[0.2em] text-slate-500">{day.weekdayLabel}</span>
+            <span className="mt-1 text-lg font-semibold text-white">{day.dayNumber}</span>
+            <span className="mt-1 text-xs text-slate-400">{day.monthLabel}</span>
+            {day.isToday ? <span className="mt-1 text-[10px] uppercase text-emerald-300">Today</span> : null}
           </button>
         );
       })}

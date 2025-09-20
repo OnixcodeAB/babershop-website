@@ -285,7 +285,7 @@ export function BookingFlow() {
       });
   }, [services]);
 
-  const upcomingDays = useMemo(() => buildUpcomingDays(), []);
+  const upcomingDays = useMemo(() => buildUpcomingDays(14), []);
 
   const filteredBarbers = useMemo(() => {
     if (!selectedService) {
@@ -341,6 +341,28 @@ export function BookingFlow() {
         return profileB.rating - profileA.rating;
       });
   }, [filters, sortOrder, selectedService, slotsByBarber, supportingBarbers]);
+
+  const selectedBarberEntity =
+    state.barberSelectionMode === 'specific' && state.barberId
+      ? supportingBarbers.find((barber) => barber.id === state.barberId) ?? null
+      : null;
+
+  const selectedSlot = useMemo(() => {
+    if (!state.slotId) {
+      return null;
+    }
+    const directMatch = availability.find((slot) => slot.slotId === state.slotId);
+    if (directMatch) {
+      return directMatch;
+    }
+    for (const slotList of slotsByBarber.values()) {
+      const found = slotList.find((slot) => slot.slotId === state.slotId);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }, [availability, slotsByBarber, state.slotId]);
 
   const recommendation = useMemo(() => {
     const featuredBarber = filteredBarbers[0] ?? supportingBarbers[0] ?? null;
@@ -835,7 +857,7 @@ export function BookingFlow() {
                     <h3 className="text-xl font-semibold text-white">{staffStepVisible ? '3. Pick your time' : '2. Pick your time'}</h3>
                     <p className="text-sm text-slate-400">Choose the day and slot that fits. We'll hold the chair for you.</p>
                   </div>
-                  <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+                  <div className="grid gap-6 lg:grid-cols-[3fr]">
                     <div className="space-y-4">
                       <h4 className="text-sm font-semibold text-white">Select a day</h4>
                       <DayGrid days={upcomingDays} selectedDate={state.date} onSelect={handleDateSelect} />
@@ -879,12 +901,8 @@ export function BookingFlow() {
                   <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-8">
                     <ReviewPanel
                       service={selectedService}
-                      barber={
-                        state.barberSelectionMode === 'specific' && state.barberId
-                          ? supportingBarbers.find((barber) => barber.id === state.barberId) ?? null
-                          : null
-                      }
-                      slot={availability.find((slot) => slot.slotId === state.slotId) ?? null}
+                      barber={selectedBarberEntity}
+                      slot={selectedSlot}
                     />
                     <form className="grid gap-4 rounded-xl border border-slate-900/60 bg-slate-900/40 p-5" onSubmit={handleBookingSubmit}>
                       <div>

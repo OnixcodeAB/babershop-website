@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\UserENM01\\OneDrive\\Documents\\developer\\babershop-website\\logs\\.25b2e4e41463716a77e91960f7046050a0697158-audit.json",
+    "files": [
+        {
+            "date": 1758677189273,
+            "name": "C:\\Users\\UserENM01\\OneDrive\\Documents\\developer\\babershop-website\\logs\\mcp-puppeteer-2025-09-23.log",
+            "hash": "c253fab86c651defcc663777ef32ef76ad2cd78feaf7603f54294f22323e084f"
+        }
+    ],
+    "hashType": "sha256"
+}

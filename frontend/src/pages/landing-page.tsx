@@ -263,7 +263,7 @@ export function LandingPage() {
             title="Find your booking"
             description="Enter your booking reference to review or update your appointment."
           />
-          <form className="mt-6 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]" onSubmit={handleReferenceLookup}>
+          <form className="mt-6 grid gap-4 items-center sm:grid-cols-[minmax(0,1fr)_auto]" onSubmit={handleReferenceLookup}>
             <div className="text-left">
               <label className="text-xs uppercase tracking-[0.25em] text-emerald-300" htmlFor="booking-reference">
                 Booking reference

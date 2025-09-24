@@ -39,6 +39,11 @@ function mapAppointment(dto: AppointmentConfirmationDto): AppointmentConfirmatio
   };
 }
 
+export async function fetchAppointmentById(reference: string): Promise<AppointmentConfirmation> {
+  const response = await httpClient.get<AppointmentConfirmationDto>(`/appointments/${reference}`);
+  return mapAppointment(response.data);
+}
+
 export async function createAppointment(payload: CreateAppointmentPayload): Promise<AppointmentConfirmation> {
   const response = await httpClient.post<AppointmentConfirmationDto>('/appointments', payload);
   return mapAppointment(response.data);

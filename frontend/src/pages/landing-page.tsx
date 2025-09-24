@@ -1,7 +1,8 @@
-﻿import { useMemo } from 'react';
+﻿import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useServicesQuery, useBarbersQuery, useNextAvailableQuery } from '../features/booking/queries';
 import { Button, Card, SectionHeader } from '../shared/ui';
+import { fetchAppointmentById } from '../shared/api/appointments';
 import { formatDateTime, formatPrice } from '../shared/format';
 import { GALLERY_ITEMS } from '../features/booking/lib/constants';
 import { getBarberProfile, getAllKnownProfiles } from '../features/booking/lib';
@@ -59,6 +60,10 @@ export function LandingPage() {
   const servicesQuery = useServicesQuery();
   const services = servicesQuery.data ?? [];
 
+  const [referenceInput, setReferenceInput] = useState('');
+  const [lookupStatus, setLookupStatus] = useState<'idle' | 'loading'>('idle');
+  const [lookupError, setLookupError] = useState<string | null>(null);
+
   const heroServices = useMemo(() => {
     const matches = HIGHLIGHT_SERVICE_NAMES.map((name) => services.find((service) => service.name === name)).filter(
       Boolean,
@@ -86,6 +91,43 @@ export function LandingPage() {
     });
     navigate({ pathname: '/book', search: searchParams.toString() });
   };
+
+  const handleReferenceInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setReferenceInput(event.target.value);
+    if (lookupError) {
+      setLookupError(null);
+    }
+  };
+
+  const handleReferenceLookup = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmed = referenceInput.trim();
+    if (!trimmed) {
+      setLookupError('Enter your booking reference.');
+      return;
+    }
+    const normalized = trimmed.replace(/\s+/g, '');
+
+    setLookupStatus('loading');
+    setLookupError(null);
+
+    try {
+      const appointment = await fetchAppointmentById(normalized);
+      setReferenceInput('');
+      navigate('/booking/confirmation', { state: { confirmation: appointment } });
+    } catch (error) {
+      const status = (error as { response?: { status?: number } })?.response?.status ?? null;
+      if (status === 404) {
+        setLookupError('We could not find a booking with that reference. Double-check the code and try again.');
+      } else {
+        setLookupError('We could not look up your booking. Please try again in a moment.');
+      }
+    } finally {
+      setLookupStatus('idle');
+    }
+  };
+
+  const isLookupLoading = lookupStatus === 'loading';
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -215,6 +257,40 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
+          <SectionHeader
+            eyebrow="Lookup"
+            title="Find your booking"
+            description="Enter your booking reference to review or update your appointment."
+          />
+          <form className="mt-6 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]" onSubmit={handleReferenceLookup}>
+            <div className="text-left">
+              <label className="text-xs uppercase tracking-[0.25em] text-emerald-300" htmlFor="booking-reference">
+                Booking reference
+              </label>
+              <input
+                id="booking-reference"
+                name="bookingReference"
+                value={referenceInput}
+                onChange={handleReferenceInputChange}
+                className="mt-2 w-full rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                placeholder="Example: BK-12345"
+                disabled={isLookupLoading}
+                autoComplete="off"
+              />
+              {lookupError ? (
+                <p className="mt-2 text-xs text-red-400">{lookupError}</p>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500">Use the reference we emailed after your booking.</p>
+              )}
+            </div>
+            <div className="flex items-end">
+              <Button type="submit" size="lg" disabled={isLookupLoading}>
+                {isLookupLoading ? 'Searching...' : 'Find booking'}
+              </Button>
+            </div>
+          </form>
+        </section>
         <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <Card className="border-slate-800 bg-slate-950/60 p-6">
             <SectionHeader
@@ -279,3 +355,10 @@ export function LandingPage() {
     </div>
   );
 }
+
+
+
+
+
+
+

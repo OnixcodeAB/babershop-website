@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from 'fastify';
+﻿import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 const appointmentSchema = z.object({
@@ -10,6 +10,48 @@ const appointmentSchema = z.object({
   slotId: z.string().min(1, 'slotId is required'),
   source: z.string().max(50).optional().default('web'),
 });
+
+const appointmentLookupParams = z.object({
+  id: z.string().min(1, 'id is required'),
+});
+
+function serializeAppointment(appointment: any) {
+  if (!appointment.service || !appointment.slot) {
+    throw new Error('Appointment is missing required relations');
+  }
+
+  return {
+    id: appointment.id,
+    status: appointment.status,
+    clientName: appointment.clientName,
+    clientEmail: appointment.clientEmail,
+    clientPhone: appointment.clientPhone,
+    notes: appointment.notes,
+    service: {
+      id: appointment.service.id,
+      name: appointment.service.name,
+      description: appointment.service.description,
+      durationMinutes: appointment.service.durationMinutes,
+      priceCents: appointment.service.priceCents,
+      isActive: appointment.service.isActive,
+    },
+    barber: appointment.barber
+      ? {
+          id: appointment.barber.id,
+          name: appointment.barber.name,
+        }
+      : null,
+    slot: {
+      id: appointment.slot.id,
+      start:
+        appointment.slot.start instanceof Date
+          ? appointment.slot.start.toISOString()
+          : appointment.slot.start,
+      end:
+        appointment.slot.end instanceof Date ? appointment.slot.end.toISOString() : appointment.slot.end,
+    },
+  };
+}
 
 const appointmentsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/appointments', async (request, reply) => {
@@ -80,28 +122,34 @@ const appointmentsRoutes: FastifyPluginAsync = async (fastify) => {
     });
 
     reply.code(201);
-    return {
-      id: appointment.id,
-      status: appointment.status,
-      clientName: appointment.clientName,
-      service: {
-        id: appointment.service.id,
-        name: appointment.service.name,
+    return serializeAppointment(appointment);
+  });
+
+  fastify.get('/appointments/:id', async (request, reply) => {
+    const parseParams = appointmentLookupParams.safeParse(request.params ?? {});
+    if (!parseParams.success) {
+      reply.code(400);
+      return { error: { message: 'Invalid parameters', details: parseParams.error.issues } };
+    }
+
+    const { id } = parseParams.data;
+
+    const appointment = await fastify.prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        service: true,
+        barber: true,
+        slot: true,
       },
-      barber: appointment.barber
-        ? {
-            id: appointment.barber.id,
-            name: appointment.barber.name,
-          }
-        : null,
-      slot: {
-        id: appointment.slot.id,
-        start: appointment.slot.start,
-        end: appointment.slot.end,
-      },
-    };
+    });
+
+    if (!appointment) {
+      reply.code(404);
+      return { error: { message: 'Appointment not found' } };
+    }
+
+    return serializeAppointment(appointment);
   });
 };
 
 export default appointmentsRoutes;
-

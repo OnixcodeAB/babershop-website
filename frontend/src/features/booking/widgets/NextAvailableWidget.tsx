@@ -22,6 +22,9 @@ export function NextAvailableWidget({ confirmation, isLoading, nextAvailable }: 
             {confirmation.service.name} with {confirmation.barber?.name ?? 'our next available barber'}
           </p>
           <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Confirmed - {confirmation.status}</p>
+          <p className="text-xs text-slate-500">
+            Reference: <span className="font-mono text-slate-200">{confirmation.id}</span>
+          </p>
         </div>
       ) : isLoading ? (
         <p className="mt-3 text-sm text-slate-400">Checking the calendar...</p>
@@ -54,3 +57,4 @@ export function NextAvailableWidget({ confirmation, isLoading, nextAvailable }: 
     </div>
   );
 }
+

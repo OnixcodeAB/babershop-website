@@ -34,7 +34,7 @@ export function BookingConfirmationPage() {
     return null;
   }
 
-  const { service, barber, slot, clientName, clientEmail, clientPhone, notes, status } = confirmation;
+  const { id: bookingReference, service, barber, slot, clientName, clientEmail, clientPhone, notes, status } = confirmation;
   const dateInput = slot.start.split('T')[0] ?? '';
   const dateLabel = slot.dateLabel ?? formatDateLabel(dateInput);
   const timeRange = formatTimeRange(slot.start, slot.end);
@@ -67,6 +67,11 @@ export function BookingConfirmationPage() {
           <p className="text-xs uppercase tracking-[0.3em] text-emerald-400">Appointment confirmed - {status}</p>
           <h2 className="mt-4 text-3xl font-semibold text-white">See you on {dateLabel}</h2>
           <p className="mt-3 text-sm text-slate-300">We'll be ready for you at {timeRange}.</p>
+          <div className="mt-6 space-y-2">
+            <p className="text-xs uppercase tracking-[0.25em] text-emerald-300">Booking reference</p>
+            <p className="inline-block select-all rounded-lg border border-emerald-400/40 bg-slate-900/60 px-4 py-2 font-mono text-sm text-emerald-200">{bookingReference}</p>
+            <p className="text-xs text-slate-500">Keep this code handy if you need to look up or update your visit.</p>
+          </div>
         </Card>
 
         <Card className="border-slate-900/60 bg-slate-900/40 p-6">
@@ -136,6 +141,3 @@ export function BookingConfirmationPage() {
     </div>
   );
 }
-
-
-

@@ -1,6 +1,6 @@
 ﻿import type { ChangeEvent, FormEvent } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import type { Service } from '../../../entities/service';
 import type { Barber } from '../../../entities/barber';
 import type { AvailabilitySlot } from '../../../entities/slot';
@@ -87,6 +87,7 @@ export function BookingFlow() {
   const state = useBookingState();
   const actions = useBookingActions();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [activeStep, setActiveStep] = useState<StepId>('service');
   const [filters, setFilters] = useState<StaffFilters>(initialFilters);
   const [sortOrder, setSortOrder] = useState<SortOrder>('recommended');
@@ -447,6 +448,7 @@ export function BookingFlow() {
       {
         onSuccess: (confirmation) => {
           actions.confirm(confirmation);
+          navigate('/booking/confirmation', { state: { confirmation } });
         },
       },
     );
@@ -972,15 +974,6 @@ export function BookingFlow() {
                           Something went wrong while scheduling. Please try again.
                         </div>
                       ) : null}
-
-                      {state.confirmation ? (
-                        <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
-                          Booking confirmed for <span className="font-medium">{state.confirmation.clientName}</span>. We reserved the slot at{' '}
-                          <span className="font-medium">{formatDateTime(state.confirmation.slot.start)}</span> with{' '}
-                          {state.confirmation.barber?.name ?? 'our next available barber'}.
-                        </div>
-                      ) : null}
-
                       <div className="mt-2 flex flex-wrap gap-3">
                         <Button variant="secondary" type="button" onClick={goToPrevious}>
                           Back
@@ -1095,6 +1088,7 @@ export function BookingFlow() {
     </div>
   );
 }
+
 
 
 

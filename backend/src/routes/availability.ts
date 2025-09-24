@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { addDays, startOfDay } from 'date-fns';
+import { addDays, parseISO, startOfDay } from 'date-fns';
 import { z } from 'zod';
 
 const querySchema = z.object({
@@ -17,7 +17,13 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const { date, serviceId, barberId } = parsed.data;
-    const dayStart = startOfDay(new Date(`${date}T00:00:00Z`));
+    const parsedDate = parseISO(date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      reply.code(400);
+      return { error: { message: 'Invalid date' } };
+    }
+
+    const dayStart = startOfDay(parsedDate);
     const dayEnd = addDays(dayStart, 1);
 
     const slots = await fastify.prisma.timeSlot.findMany({

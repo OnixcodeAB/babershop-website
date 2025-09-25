@@ -9,6 +9,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  CLIENT
+  ADMIN
+}
+
 model Service {
   id              String      @id @default(cuid())
   name            String
@@ -73,9 +78,11 @@ model Appointment {
 model User {
   id                 String    @id @default(cuid())
   email              String    @unique
-  role               String
+  role               UserRole  @default(CLIENT)
+  passwordHash       String?
   magicLinkTokenHash String?
   tokenExpiry        DateTime?
+  sessions           AdminSession[]
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 }
@@ -85,4 +92,15 @@ model MetricEvent {
   eventType  String
   payload    String
   occurredAt DateTime @default(now())
+}
+
+model AdminSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

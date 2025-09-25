@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { PrismaClient } from '@prisma/client';
+import { hashPassword } from '../src/lib/password';
 
 const prisma = new PrismaClient();
 
@@ -99,7 +100,20 @@ async function main() {
     ),
   );
 
-  console.log(`Seed completed with ${serviceData.length} services, 1 barber, ${slots.length} time slots.`);
+  await prisma.user.upsert({
+    where: { email: 'admin@barbershop.dev' },
+    update: {
+      role: 'ADMIN',
+      passwordHash: hashPassword('change-me'),
+    },
+    create: {
+      email: 'admin@barbershop.dev',
+      role: 'ADMIN',
+      passwordHash: hashPassword('change-me'),
+    },
+  });
+
+  console.log(`Seed completed with ${serviceData.length} services, 1 barber, ${slots.length} time slots, and admin account admin@barbershop.dev.`);
 }
 
 main()

@@ -1,11 +1,20 @@
-# BarberShop Platform
+ï»¿# BarberShop Platform
 
 This repository contains two independent projects for the BarberShop MVP:
 
-- `backend/` – Fastify + Prisma API server.
-- `frontend/` – React + Vite client application.
+- `backend/` - Fastify + Prisma API server.
+- `frontend/` - React + Vite client application.
 
 Each project runs and is deployed independently (no npm workspaces).
+
+## Directory overview
+
+The frontend is now split into two top-level entry points:
+
+- `frontend/src/client` â€“ the guest booking experience (landing, booking flow, shared UI pieces).
+- `frontend/src/admin` â€“ the future admin dashboard surface. Currently ships with a placeholder layout; real dashboards will live here.
+
+`frontend/src/App.tsx` and `frontend/src/main.tsx` simply re-export/boot the client bundle so existing tooling keeps working. When the admin surface needs its own entry, add a dedicated `admin-main.tsx` or lazy route that mounts `AdminApp`.
 
 ## Getting Started
 
@@ -41,4 +50,3 @@ Set `VITE_API_BASE_URL` in `frontend/.env` if the backend runs on a different ho
 - Implement a React landing page that lists services and fetches data from the API.
 
 Refer to `Implementation.md` for the full roadmap and design details.
-

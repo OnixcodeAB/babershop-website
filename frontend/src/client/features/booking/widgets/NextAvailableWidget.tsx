@@ -1,6 +1,6 @@
-﻿import type { AppointmentConfirmation } from '../../../entities/appointment';
+import type { AppointmentConfirmation } from '../../../entities/appointment';
 import type { NextAvailableResult } from '../queries/useNextAvailableQuery';
-import { formatDateTime } from '../../../shared/format';
+import { formatDateTime, formatAppointmentStatus } from '../../../shared/format';
 
 interface NextAvailableWidgetProps {
   confirmation: AppointmentConfirmation | null;
@@ -21,7 +21,7 @@ export function NextAvailableWidget({ confirmation, isLoading, nextAvailable }: 
           <p className="text-slate-300">
             {confirmation.service.name} with {confirmation.barber?.name ?? 'our next available barber'}
           </p>
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Confirmed - {confirmation.status}</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Status: {formatAppointmentStatus(confirmation.status)}</p>
           <p className="text-xs text-slate-500">
             Reference: <span className="font-mono text-slate-200">{confirmation.id}</span>
           </p>

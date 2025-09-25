@@ -1,4 +1,4 @@
-﻿import type { AppointmentConfirmation } from '../../entities/appointment';
+import type { AppointmentConfirmation, AppointmentStatus } from '../../entities/appointment';
 import type { Service } from '../../entities/service';
 import type { Barber } from '../../entities/barber';
 import type { AvailabilitySlot } from '../../entities/slot';
@@ -10,7 +10,7 @@ export type AppointmentConfirmationDto = {
   clientEmail: string | null;
   clientPhone: string | null;
   notes: string | null;
-  status: string;
+  status: AppointmentStatus;
   service: Service;
   barber: Barber | null;
   slot: AvailabilitySlot;

@@ -1,10 +1,27 @@
-﻿import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { NavLink, Navigate, Outlet, Route, Routes, useNavigate, useOutletContext } from 'react-router-dom';
+import type { AppointmentStatus } from '../client/entities/appointment';
+import { formatDateTime } from '../client/shared/format/date';
 import { logoutAdmin, type AdminSessionResponse } from './api/session';
 import { useAdminSession } from './hooks/useAdminSession';
+import { useAdminAppointments, useUpdateAppointmentStatus } from './hooks/useAdminAppointments';
 
 interface AdminOutletContext {
   user: AdminSessionResponse['user'];
+}
+
+const statusOptions: Array<{ value: AppointmentStatus; label: string }> = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'CONFIRMED', label: 'Confirmed' },
+  { value: 'IN_PROGRESS', label: 'In progress' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+];
+
+function formatStatus(status: AppointmentStatus) {
+  const match = statusOptions.find((option) => option.value === status);
+  return match ? match.label : status;
 }
 
 function AdminGuard() {
@@ -18,11 +35,7 @@ function AdminGuard() {
     );
   }
 
-  if (error) {
-    return <Navigate to="/admin/login" replace />;
-  }
-
-  if (!data) {
+  if (error || !data) {
     return <Navigate to="/admin/login" replace />;
   }
 
@@ -123,14 +136,115 @@ function DashboardHome() {
   );
 }
 
-function AppointmentsPlaceholder() {
+function AppointmentsView() {
+  const [filter, setFilter] = useState<'all' | AppointmentStatus>('all');
+  const { data, status, error } = useAdminAppointments(filter === 'all' ? undefined : filter);
+  const updateStatus = useUpdateAppointmentStatus();
+
+  const appointments = data ?? [];
+  const filterOptions = useMemo(
+    () => [{ value: 'all', label: 'All statuses' }, ...statusOptions],
+    [],
+  );
+
   return (
-    <div className="rounded-xl border border-slate-900 bg-slate-900/40 p-8 text-slate-200">
-      <h2 className="text-2xl font-semibold text-white">Appointments</h2>
-      <p className="mt-3 text-sm text-slate-400">
-        Appointment management tools will ship in the next iteration. Expect filters, status updates, and quick
-        customer lookup.
-      </p>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold text-white">Appointments</h2>
+          <p className="text-sm text-slate-400">Track bookings and update their status as clients arrive.</p>
+        </div>
+        <div>
+          <label className="text-xs uppercase tracking-[0.25em] text-slate-400" htmlFor="appointment-status-filter">
+            Filter by status
+          </label>
+          <select
+            id="appointment-status-filter"
+            value={filter}
+            onChange={(event) => setFilter(event.target.value as 'all' | AppointmentStatus)}
+            className="mt-2 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+          >
+            {filterOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {status === 'pending' ? (
+        <div className="rounded-xl border border-slate-900 bg-slate-900/40 p-6 text-sm text-slate-400">
+          Loading appointments...
+        </div>
+      ) : error ? (
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-6 text-sm text-red-200">
+          Something went wrong while loading appointments.
+        </div>
+      ) : appointments.length === 0 ? (
+        <div className="rounded-xl border border-slate-900 bg-slate-900/40 p-6 text-sm text-slate-400">
+          No appointments to display.
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-slate-900 bg-slate-900/40">
+          <table className="min-w-full divide-y divide-slate-900 text-left text-sm text-slate-200">
+            <thead className="bg-slate-900/60 text-xs uppercase tracking-[0.25em] text-slate-400">
+              <tr>
+                <th className="px-4 py-3">Client</th>
+                <th className="px-4 py-3">Service</th>
+                <th className="px-4 py-3">Scheduled</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-900/80">
+              {appointments.map((appointment) => (
+                <tr key={appointment.id} className="hover:bg-slate-900/40">
+                  <td className="px-4 py-3 align-top">
+                    <div className="font-medium text-white">{appointment.clientName}</div>
+                    <div className="text-xs text-slate-500">
+                      {appointment.clientEmail ?? 'No email'} Ã‚Â· {appointment.clientPhone ?? 'No phone'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div>{appointment.service.name}</div>
+                    {appointment.barber ? (
+                      <div className="text-xs text-slate-500">with {appointment.barber.name}</div>
+                    ) : (
+                      <div className="text-xs text-slate-500">Barber pending</div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <div>{formatDateTime(appointment.slot.start)}</div>
+                    <div className="text-xs text-slate-500">Created {formatDateTime(appointment.createdAt)}</div>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <span className="inline-flex rounded-full bg-slate-800 px-3 py-1 text-xs uppercase tracking-[0.2em] text-emerald-200">
+                      {formatStatus(appointment.status)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    <select
+                      value={appointment.status}
+                      onChange={(event) =>
+                        updateStatus.mutate({ id: appointment.id, status: event.target.value as AppointmentStatus })
+                      }
+                      className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                      disabled={updateStatus.isPending}
+                    >
+                      {statusOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -152,11 +266,11 @@ export default function AdminApp() {
       <Route element={<AdminGuard />}>
         <Route element={<AdminLayout />}>
           <Route index element={<DashboardHome />} />
-          <Route path="appointments" element={<AppointmentsPlaceholder />} />
+          <Route path="appointments" element={<AppointmentsView />} />
           <Route path="barbers" element={<BarbersPlaceholder />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="." replace />} />
+      <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>
   );
 }

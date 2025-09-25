@@ -1,5 +1,8 @@
-﻿import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+
+const appointmentStatusValues = ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] as const;
+const appointmentStatusEnum = z.enum(appointmentStatusValues);
 
 const appointmentSchema = z.object({
   clientName: z.string().min(1, 'clientName is required').max(120),
@@ -13,6 +16,14 @@ const appointmentSchema = z.object({
 
 const appointmentLookupParams = z.object({
   id: z.string().min(1, 'id is required'),
+});
+
+const updateStatusSchema = z.object({
+  status: appointmentStatusEnum,
+});
+
+const appointmentListQuery = z.object({
+  status: appointmentStatusEnum.optional(),
 });
 
 function serializeAppointment(appointment: any) {
@@ -50,6 +61,9 @@ function serializeAppointment(appointment: any) {
       end:
         appointment.slot.end instanceof Date ? appointment.slot.end.toISOString() : appointment.slot.end,
     },
+    createdAt: appointment.createdAt instanceof Date ? appointment.createdAt.toISOString() : appointment.createdAt,
+    updatedAt: appointment.updatedAt instanceof Date ? appointment.updatedAt.toISOString() : appointment.updatedAt,
+    source: appointment.source,
   };
 }
 
@@ -125,6 +139,34 @@ const appointmentsRoutes: FastifyPluginAsync = async (fastify) => {
     return serializeAppointment(appointment);
   });
 
+  fastify.get('/appointments', { preHandler: fastify.authenticateAdmin }, async (request, reply) => {
+    const parseQuery = appointmentListQuery.safeParse(request.query ?? {});
+    if (!parseQuery.success) {
+      reply.code(400);
+      return { error: { message: 'Invalid query', details: parseQuery.error.issues } };
+    }
+
+    const { status } = parseQuery.data;
+
+    const appointments = await fastify.prisma.appointment.findMany({
+      where: {
+        status: status ?? undefined,
+      },
+      orderBy: {
+        slot: {
+          start: 'asc',
+        },
+      },
+      include: {
+        service: true,
+        barber: true,
+        slot: true,
+      },
+    });
+
+    return appointments.map(serializeAppointment);
+  });
+
   fastify.get('/appointments/:id', async (request, reply) => {
     const parseParams = appointmentLookupParams.safeParse(request.params ?? {});
     if (!parseParams.success) {
@@ -149,6 +191,40 @@ const appointmentsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     return serializeAppointment(appointment);
+  });
+
+  fastify.patch('/appointments/:id/status', { preHandler: fastify.authenticateAdmin }, async (request, reply) => {
+    const parseParams = appointmentLookupParams.safeParse(request.params ?? {});
+    if (!parseParams.success) {
+      reply.code(400);
+      return { error: { message: 'Invalid parameters', details: parseParams.error.issues } };
+    }
+
+    const parseBody = updateStatusSchema.safeParse(request.body ?? {});
+    if (!parseBody.success) {
+      reply.code(400);
+      return { error: { message: 'Invalid payload', details: parseBody.error.issues } };
+    }
+
+    const { id } = parseParams.data;
+    const { status } = parseBody.data;
+
+    try {
+      const updated = await fastify.prisma.appointment.update({
+        where: { id },
+        data: { status },
+        include: {
+          service: true,
+          barber: true,
+          slot: true,
+        },
+      });
+
+      return serializeAppointment(updated);
+    } catch (error) {
+      reply.code(404);
+      return { error: { message: 'Appointment not found' } };
+    }
   });
 };
 

@@ -1,9 +1,9 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import type { AppointmentConfirmation } from '../../../entities/appointment';
 import { useBookingActions, useBookingState } from '../hooks';
 import { Button, Card } from '../../../shared/ui';
-import { formatDateLabel, formatDateTime, formatTimeRange } from '../../../shared/format';
+import { formatDateLabel, formatDateTime, formatTimeRange, formatAppointmentStatus } from '../../../shared/format';
 
 type BookingConfirmationLocationState = {
   confirmation?: AppointmentConfirmation;
@@ -64,7 +64,7 @@ export function BookingConfirmationPage() {
         </div>
 
         <Card className="border-emerald-500/40 bg-slate-950/60 p-8 text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-emerald-400">Appointment confirmed - {status}</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-emerald-400">Appointment {formatAppointmentStatus(status)}</p>
           <h2 className="mt-4 text-3xl font-semibold text-white">See you on {dateLabel}</h2>
           <p className="mt-3 text-sm text-slate-300">We'll be ready for you at {timeRange}.</p>
           <div className="mt-6 space-y-2">

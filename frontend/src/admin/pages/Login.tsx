@@ -1,4 +1,4 @@
-﻿import { FormEvent, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginAdmin } from '../api/session';
@@ -78,7 +78,7 @@ export default function AdminLoginPage() {
         </form>
 
         <Link to="/" className="mt-6 inline-block text-xs uppercase tracking-[0.3em] text-emerald-300 hover:text-emerald-200">
-          ← Back to site
+          Back to site
         </Link>
       </div>
     </div>

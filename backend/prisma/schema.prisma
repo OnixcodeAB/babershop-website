@@ -14,6 +14,14 @@ enum UserRole {
   ADMIN
 }
 
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model Service {
   id              String      @id @default(cuid())
   name            String
@@ -59,7 +67,7 @@ model Appointment {
   clientEmail String?
   clientPhone String?
   notes       String?
-  status      String      @default("PENDING")
+  status      AppointmentStatus @default(PENDING)
   source      String?     @default("web")
   serviceId   String
   barberId    String?

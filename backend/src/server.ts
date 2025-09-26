@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import prismaPlugin from './plugins/prisma.js';
 import adminAuthPlugin from './plugins/admin-auth.js';
 import servicesRoutes from './routes/services.js';
+import adminServicesRoutes from './routes/admin-services.js';
 import barbersRoutes from './routes/barbers.js';
 import availabilityRoutes from './routes/availability.js';
 import appointmentsRoutes from './routes/appointments.js';
@@ -32,6 +33,7 @@ const buildServer = () => {
 
   app.register(async (instance) => {
     instance.register(servicesRoutes, { prefix: '/api' });
+    instance.register(adminServicesRoutes, { prefix: '/api' });
     instance.register(barbersRoutes, { prefix: '/api' });
     instance.register(availabilityRoutes, { prefix: '/api' });
     instance.register(appointmentsRoutes, { prefix: '/api' });

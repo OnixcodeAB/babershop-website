@@ -8,11 +8,13 @@ import { fileURLToPath } from 'node:url';
 import prismaPlugin from './plugins/prisma.js';
 import adminAuthPlugin from './plugins/admin-auth.js';
 import servicesRoutes from './routes/services.js';
+import categoriesRoutes from './routes/categories.js';
 import adminServicesRoutes from './routes/admin-services.js';
 import barbersRoutes from './routes/barbers.js';
 import availabilityRoutes from './routes/availability.js';
 import appointmentsRoutes from './routes/appointments.js';
 import authRoutes from './routes/auth.js';
+import adminCategoriesRoutes from './routes/admin-categories.js';
 
 const envPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.env');
 dotenv.config({ path: envPath });
@@ -33,6 +35,8 @@ const buildServer = () => {
 
   app.register(async (instance) => {
     instance.register(servicesRoutes, { prefix: '/api' });
+    instance.register(categoriesRoutes, { prefix: '/api' });
+    instance.register(adminCategoriesRoutes, { prefix: '/api' });
     instance.register(adminServicesRoutes, { prefix: '/api' });
     instance.register(barbersRoutes, { prefix: '/api' });
     instance.register(availabilityRoutes, { prefix: '/api' });

@@ -7,6 +7,7 @@ export type Service = {
   durationMinutes: number;
   priceCents: number;
   isActive: boolean;
+  categories?: Array<{ id: string; name: string }>;
 };
 
 export type ServiceSummary = Pick<Service, 'id' | 'name' | 'durationMinutes' | 'priceCents'>;

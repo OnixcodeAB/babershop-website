@@ -10,6 +10,7 @@ const listQuerySchema = z.object({
   sort: z.enum(sortValues).optional().default('name'),
   page: z.coerce.number().int().min(1).optional().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).optional().default(12),
+  category: z.string().optional(),
 });
 
 const serviceCreateSchema = z.object({
@@ -18,6 +19,7 @@ const serviceCreateSchema = z.object({
   durationMinutes: z.number().int().min(1),
   priceCents: z.number().int().min(0),
   isActive: z.boolean().optional().default(true),
+  categoryIds: z.array(z.string()).optional().default([]),
 });
 
 const serviceUpdateSchema = z.object({
@@ -26,6 +28,7 @@ const serviceUpdateSchema = z.object({
   durationMinutes: z.number().int().min(1).optional(),
   priceCents: z.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
+  categoryIds: z.array(z.string()).optional(),
 });
 
 const idParamsSchema = z.object({ id: z.string().min(1) });
@@ -38,6 +41,7 @@ function serializeService(service: any) {
     durationMinutes: service.durationMinutes,
     priceCents: service.priceCents,
     isActive: service.isActive,
+    categories: (service.categories ?? []).map((c: any) => ({ id: c.id, name: c.name })),
     updatedAt: service.updatedAt instanceof Date ? service.updatedAt.toISOString() : service.updatedAt,
   };
 }
@@ -50,7 +54,7 @@ const adminServicesRoutes: FastifyPluginAsync = async (fastify) => {
       reply.code(400);
       return { error: { message: 'Invalid query', details: parsed.error.issues } };
     }
-    const { query, status, sort, page, pageSize } = parsed.data;
+    const { query, status, sort, page, pageSize, category } = parsed.data;
 
     const where: any = {};
     if (query) {
@@ -61,6 +65,9 @@ const adminServicesRoutes: FastifyPluginAsync = async (fastify) => {
     }
     if (status === 'active') where.isActive = true;
     if (status === 'inactive') where.isActive = false;
+    if (category) {
+      where.categories = { some: { id: category } };
+    }
 
     const orderBy: any =
       sort === 'price'
@@ -73,7 +80,7 @@ const adminServicesRoutes: FastifyPluginAsync = async (fastify) => {
 
     const [total, items] = await Promise.all([
       fastify.prisma.service.count({ where }),
-      fastify.prisma.service.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
+      fastify.prisma.service.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize, include: { categories: true } }),
     ]);
 
     return {
@@ -99,7 +106,11 @@ const adminServicesRoutes: FastifyPluginAsync = async (fastify) => {
         durationMinutes: parsed.data.durationMinutes,
         priceCents: parsed.data.priceCents,
         isActive: parsed.data.isActive ?? true,
+        categories: parsed.data.categoryIds && parsed.data.categoryIds.length > 0 ? {
+          connect: parsed.data.categoryIds.map((id) => ({ id })),
+        } : undefined,
       },
+      include: { categories: true },
     });
 
     reply.code(201);
@@ -120,11 +131,14 @@ const adminServicesRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     try {
+      const updateData: any = { ...body.data };
+      if (Array.isArray(body.data.categoryIds)) {
+        updateData.categories = { set: body.data.categoryIds.map((id) => ({ id })) };
+      }
       const updated = await fastify.prisma.service.update({
         where: { id: params.data.id },
-        data: {
-          ...body.data,
-        },
+        data: updateData,
+        include: { categories: true },
       });
       return serializeService(updated);
     } catch (error) {
@@ -152,4 +166,3 @@ const adminServicesRoutes: FastifyPluginAsync = async (fastify) => {
 };
 
 export default adminServicesRoutes;
-

@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { Service } from '../../client/entities/service';
 import { useAdminServices, type ServicesQueryParams, useToggleServiceActive, useDeleteService, useCreateService, useUpdateService } from '../hooks/useAdminServices';
+import { useAdminCategories } from '../hooks/useAdminCategories';
 import ServiceEditor from './ServiceEditor';
 import ConfirmDialog from './ConfirmDialog';
 import { useSearchParams } from 'react-router-dom';
+import CategoryManager from './CategoryManager';
 
-function PageHeader({ onNew }: { onNew: () => void }) {
+function PageHeader({ onNew, onManageCategories }: { onNew: () => void; onManageCategories: () => void }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div>
@@ -19,8 +21,9 @@ function PageHeader({ onNew }: { onNew: () => void }) {
         <button
           type="button"
           className="rounded-full border border-slate-800 bg-slate-900/60 px-3 py-2 text-xs uppercase tracking-[0.2em] text-slate-300"
+          onClick={onManageCategories}
         >
-          Import
+          Categories
         </button>
         <button
           type="button"
@@ -43,10 +46,12 @@ function PageHeader({ onNew }: { onNew: () => void }) {
 function ServicesToolbar(props: {
   query: string;
   status: 'all' | 'active' | 'inactive';
+  category: string | 'all';
   view: 'grid' | 'list';
-  onChange: (next: Partial<Pick<ServicesQueryParams, 'query' | 'status'>> & { view?: 'grid' | 'list' }) => void;
+  onChange: (next: Partial<Pick<ServicesQueryParams, 'query' | 'status' | 'category'>> & { view?: 'grid' | 'list' }) => void;
 }) {
-  const { query, status, view, onChange } = props;
+  const { query, status, category, view, onChange } = props;
+  const cats = useAdminCategories({ status: 'active', page: 1, pageSize: 100, sort: 'sortOrder' });
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="relative">
@@ -69,6 +74,16 @@ function ServicesToolbar(props: {
         <option value="all">All</option>
         <option value="active">Active</option>
         <option value="inactive">Inactive</option>
+      </select>
+      <select
+        value={category}
+        onChange={(e) => onChange({ category: e.target.value === 'all' ? undefined : e.target.value })}
+        className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+      >
+        <option value="all">All categories</option>
+        {(cats.data?.items ?? []).map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
       </select>
       <div className="ml-auto flex items-center gap-2">
         <button
@@ -189,13 +204,14 @@ export default function ServicesPage() {
     return s === 'active' || s === 'inactive' ? s : 'all';
   });
   const [view, setView] = useState<'grid' | 'list'>(() => (searchParams.get('view') === 'list' ? 'list' : 'grid'));
+  const [category, setCategory] = useState<string | 'all'>(() => searchParams.get('category') ?? 'all');
   const [page, setPage] = useState(() => Math.max(1, parseInt(searchParams.get('page') || '1', 10)));
   const [pageSize, setPageSize] = useState(() => {
     const size = parseInt(searchParams.get('size') || '12', 10);
     return [12, 24, 48].includes(size) ? size : 12;
   });
 
-  const params: ServicesQueryParams = { query, status: statusFilter, page, pageSize };
+  const params: ServicesQueryParams = { query, status: statusFilter, page, pageSize, category: category !== 'all' ? category : undefined };
   const queryResult = useAdminServices(params);
   const { data, isPending, error } = queryResult as { data?: { items: Service[]; total: number; page: number; pageSize: number }; isPending: boolean; error: unknown };
   const paged = (data as { items: Service[]; total: number; page: number; pageSize: number }) ?? { items: [], total: 0, page, pageSize };
@@ -212,6 +228,7 @@ export default function ServicesPage() {
   const [editorInitial, setEditorInitial] = useState<Partial<Service> | undefined>(undefined);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState<Service | null>(null);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
 
   // URL sync
   useEffect(() => {
@@ -221,19 +238,22 @@ export default function ServicesPage() {
     sp.set('view', view);
     sp.set('page', String(page));
     sp.set('size', String(pageSize));
+    if (category && category !== 'all') sp.set('category', category);
     setSearchParams(sp, { replace: true });
-  }, [query, statusFilter, view, page, pageSize, setSearchParams]);
+  }, [query, statusFilter, view, page, pageSize, category, setSearchParams]);
 
   return (
     <section role="region" aria-labelledby="services-heading" className="space-y-4">
-      <PageHeader onNew={() => { setEditorMode('create'); setEditorInitial(undefined); setEditorOpen(true); }} />
+      <PageHeader onNew={() => { setEditorMode('create'); setEditorInitial(undefined); setEditorOpen(true); }} onManageCategories={() => setCategoriesOpen(true)} />
       <ServicesToolbar
         query={query}
         status={statusFilter}
+        category={category}
         view={view}
         onChange={(next) => {
           if (typeof next.query !== 'undefined') { setQuery(next.query); setPage(1); }
           if (typeof next.status !== 'undefined') { setStatusFilter(next.status); setPage(1); }
+          if (typeof next.category !== 'undefined') { setCategory((next.category as any) ?? 'all'); setPage(1); }
           if (next.view) setView(next.view);
         }}
       />
@@ -304,6 +324,7 @@ export default function ServicesPage() {
           setToDelete(null);
         }}
       />
+      <CategoryManager open={categoriesOpen} onClose={() => setCategoriesOpen(false)} />
     </section>
   );
 }

@@ -15,12 +15,12 @@ export type Paged<T> = { items: T[]; total: number; page: number; pageSize: numb
 
 // NOTE: Uses public services fetch and applies client-side filtering/sorting/pagination.
 export function useAdminServices(params: ServicesQueryParams = { page: 1, pageSize: 12, status: 'all' }) {
-  const { query = '', status = 'all', sort = 'name', page = 1, pageSize = 12 } = params;
+  const { query = '', status = 'all', sort = 'name', page = 1, pageSize = 12, category } = params;
 
   return useQuery<Paged<Service>, unknown>({
-    queryKey: ['admin', 'services', { query, status, sort, page, pageSize }],
+    queryKey: ['admin', 'services', { query, status, sort, page, pageSize, category }],
     queryFn: async () => {
-      return await fetchAdminServices({ query, status, sort, page, pageSize });
+      return await fetchAdminServices({ query, status, sort, page, pageSize, category });
     },
     placeholderData: (prev) => prev as any,
   });

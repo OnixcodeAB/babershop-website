@@ -12,12 +12,9 @@ import {
   useNextAvailableQuery,
   useCreateAppointmentMutation,
 } from '../queries';
-import {
-  buildUpcomingDays,
-  describeSlot,
-  categorizeService,
-  getBarberProfile,
-} from '../lib';
+import { buildUpcomingDays, describeSlot, getBarberProfile } from '../lib';
+import { fetchCategories } from '../../../shared/api/categories';
+import { useQuery } from '@tanstack/react-query';
 import { selectClientFields, selectIsReadyToSubmit, selectNextSteps } from '../model';
 import { NextAvailableWidget, QuickBookingWidget, DayGrid, SlotList, ReviewPanel } from '../widgets';
 import { ServiceCard } from '../components';
@@ -96,6 +93,7 @@ export function BookingFlow() {
   const serviceHydratedRef = useRef<string | null>(null);
 
   const servicesQuery = useServicesQuery();
+  const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: fetchCategories });
   const services = servicesQuery.data ?? [];
   const defaultService = services[0] ?? null;
 
@@ -257,33 +255,29 @@ export function BookingFlow() {
       : availability;
 
   const serviceGroups = useMemo(() => {
-    if (services.length === 0) {
-      return [] as { category: string; services: Service[] }[];
-    }
-    const categoryOrder = ['Haircuts', 'Beard Care', 'Shaves', 'Color', 'Other Services'];
-    const grouped = new Map<string, Service[]>();
-    services.forEach((service) => {
-      const category = categorizeService(service);
-      const bucket = grouped.get(category) ?? [];
-      bucket.push(service);
-      grouped.set(category, bucket);
+    if (services.length === 0) return [] as { category: string; services: Service[] }[];
+    const cats = categoriesQuery.data ?? [];
+    const byCatId: Record<string, Service[]> = {};
+    services.forEach((s) => {
+      const sCats = s.categories ?? [];
+      if (sCats.length === 0) {
+        byCatId['__other__'] = byCatId['__other__'] ? [...byCatId['__other__'], s] : [s];
+      } else {
+        sCats.forEach((c) => {
+          byCatId[c.id] = byCatId[c.id] ? [...byCatId[c.id], s] : [s];
+        });
+      }
     });
-    return Array.from(grouped.entries())
-      .map(([category, bucket]) => ({
-        category,
-        services: [...bucket].sort((a, b) => a.name.localeCompare(b.name)),
-      }))
-      .sort((a, b) => {
-        const aIndex = categoryOrder.indexOf(a.category);
-        const bIndex = categoryOrder.indexOf(b.category);
-        const resolvedA = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex;
-        const resolvedB = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex;
-        if (resolvedA !== resolvedB) {
-          return resolvedA - resolvedB;
-        }
-        return a.category.localeCompare(b.category);
-      });
-  }, [services]);
+    const groups: { category: string; services: Service[] }[] = [];
+    cats.forEach((c) => {
+      const bucket = byCatId[c.id] ?? [];
+      if (bucket.length > 0) groups.push({ category: c.name, services: bucket.sort((a, b) => a.name.localeCompare(b.name)) });
+    });
+    if (byCatId['__other__'] && byCatId['__other__'].length > 0) {
+      groups.push({ category: 'Other Services', services: byCatId['__other__'].sort((a, b) => a.name.localeCompare(b.name)) });
+    }
+    return groups;
+  }, [services, categoriesQuery.data]);
 
   const upcomingDays = useMemo(() => buildUpcomingDays(14), []);
 

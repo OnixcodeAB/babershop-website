@@ -8,6 +8,7 @@ export type ServiceDto = {
   durationMinutes: number;
   priceCents: number;
   isActive: boolean;
+  categories?: Array<{ id: string; name: string }>;
 };
 
 function mapService(dto: ServiceDto): Service {
@@ -18,6 +19,7 @@ function mapService(dto: ServiceDto): Service {
     durationMinutes: dto.durationMinutes,
     priceCents: dto.priceCents,
     isActive: dto.isActive,
+    categories: dto.categories ?? [],
   };
 }
 

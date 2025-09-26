@@ -98,7 +98,7 @@ export function useCreateService(params: ServicesQueryParams) {
 export function useUpdateService(params: ServicesQueryParams) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (service: Service) => await updateAdminService(service),
+    mutationFn: async (service: Service & { categoryIds?: string[] }) => await updateAdminService(service),
     onMutate: async (service) => {
       await qc.cancelQueries({ queryKey: ['admin', 'services'] });
       const allQueries = qc.getQueryCache().findAll({ queryKey: ['admin', 'services'] });

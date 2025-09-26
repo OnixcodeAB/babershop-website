@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Service } from '../../client/entities/service';
 import { useAdminCategories } from '../hooks/useAdminCategories';
+import { useToast } from '../ui/toast';
 
 export type ServiceEditorProps = {
   open: boolean;
   mode: 'create' | 'edit';
   initial?: Partial<Service>;
   onClose: () => void;
-  onSave: (values: Omit<Service, 'id'> & { id?: string }) => Promise<void> | void;
+  onSave: (values: Omit<Service, 'id'> & { id?: string; categoryIds?: string[] }) => Promise<void> | void;
 };
 
-type Draft = Omit<Service, 'id'> & { id?: string };
+type Draft = Omit<Service, 'id'> & { id?: string; categoryIds?: string[] };
 
 export default function ServiceEditor({ open, mode, initial, onClose, onSave }: ServiceEditorProps) {
   const [draft, setDraft] = useState<Draft>({
@@ -25,12 +26,17 @@ export default function ServiceEditor({ open, mode, initial, onClose, onSave }: 
   const [saving, setSaving] = useState(false);
   const categoriesQuery = useAdminCategories({ status: 'active', page: 1, pageSize: 100, sort: 'sortOrder' });
   const categories = categoriesQuery.data?.items ?? [];
+  const { notify } = useToast();
 
   useEffect(() => {
     if (open) {
       setErrors({});
       setSaving(false);
-      setDraft((prev) => ({ ...prev, ...(initial as Draft) }));
+      setDraft((prev) => ({
+        ...prev,
+        ...(initial as Draft),
+        categoryIds: (initial as any)?.categories?.map?.((c: any) => c.id) ?? (prev.categoryIds ?? []),
+      }));
     }
   }, [open, initial]);
 
@@ -51,6 +57,7 @@ export default function ServiceEditor({ open, mode, initial, onClose, onSave }: 
     setSaving(true);
     try {
       await onSave(draft);
+      notify({ type: 'success', message: mode === 'create' ? 'Service created' : 'Service updated' });
       onClose();
     } finally {
       setSaving(false);

@@ -10,6 +10,7 @@ export type ServiceDto = {
   priceCents: number;
   isActive: boolean;
   updatedAt?: string;
+  categories?: Array<{ id: string; name: string }>;
 };
 
 export type ListParams = {
@@ -18,6 +19,7 @@ export type ListParams = {
   sort?: 'name' | 'price' | 'duration' | 'updatedAt';
   page?: number;
   pageSize?: number;
+  category?: string;
 };
 
 export type ListResponse = {
@@ -35,6 +37,7 @@ function map(dto: ServiceDto): Service {
     durationMinutes: dto.durationMinutes,
     priceCents: dto.priceCents,
     isActive: dto.isActive,
+    categories: dto.categories ?? [],
   };
 }
 
@@ -51,6 +54,7 @@ export async function fetchAdminServices(params: ListParams): Promise<{ items: S
     if (q) items = items.filter((s) => s.name.toLowerCase().includes(q));
     if (params.status === 'active') items = items.filter((s) => s.isActive);
     if (params.status === 'inactive') items = items.filter((s) => !s.isActive);
+    if (params.category) items = items.filter((s) => (s.categories ?? []).some((c) => c.id === params.category));
     items = [...items].sort((a, b) => {
       switch (params.sort) {
         case 'price':
@@ -70,7 +74,7 @@ export async function fetchAdminServices(params: ListParams): Promise<{ items: S
   }
 }
 
-export async function createAdminService(body: Omit<Service, 'id'> & { id?: string }): Promise<Service> {
+export async function createAdminService(body: Omit<Service, 'id'> & { id?: string; categoryIds?: string[] }): Promise<Service> {
   try {
     const res = await httpClient.post<ServiceDto>('/admin/services', body);
     return map(res.data);
@@ -81,7 +85,7 @@ export async function createAdminService(body: Omit<Service, 'id'> & { id?: stri
   }
 }
 
-export async function updateAdminService(service: Service): Promise<Service> {
+export async function updateAdminService(service: Service & { categoryIds?: string[] }): Promise<Service> {
   try {
     const res = await httpClient.patch<ServiceDto>(`/admin/services/${service.id}`, service);
     return map(res.data);
@@ -105,4 +109,3 @@ export async function toggleAdminServiceActive(id: string, isActive: boolean): P
     // ignore in fallback
   }
 }
-

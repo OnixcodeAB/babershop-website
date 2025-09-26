@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Plus, Trash2, Tag } from 'lucide-react';
 import type { Service } from '../../client/entities/service';
 import { useAdminServices, type ServicesQueryParams, useToggleServiceActive, useDeleteService, useCreateService, useUpdateService } from '../hooks/useAdminServices';
 import { useAdminCategories } from '../hooks/useAdminCategories';
@@ -7,6 +7,8 @@ import ServiceEditor from './ServiceEditor';
 import ConfirmDialog from './ConfirmDialog';
 import { useSearchParams } from 'react-router-dom';
 import CategoryManager from './CategoryManager';
+import AssignCategoryDialog from './AssignCategoryDialog';
+import { useToast } from '../ui/toast';
 
 function PageHeader({ onNew, onManageCategories }: { onNew: () => void; onManageCategories: () => void }) {
   return (
@@ -140,13 +142,14 @@ function ServiceCard({ service }: { service: Service }) {
   );
 }
 
-function ServiceCollection({ items, variant, onEdit, onToggleActive, onDelete }: { items: Service[]; variant: 'grid' | 'list'; onEdit: (s: Service) => void; onToggleActive: (s: Service) => void; onDelete: (s: Service) => void; }) {
+function ServiceCollection({ items, variant, selectedIds = [], onToggleSelect, onEdit, onToggleActive, onDelete }: { items: Service[]; variant: 'grid' | 'list'; selectedIds?: string[]; onToggleSelect?: (id: string, checked: boolean) => void; onEdit: (s: Service) => void; onToggleActive: (s: Service) => void; onDelete: (s: Service) => void; }) {
   if (variant === 'list') {
     return (
       <div className="overflow-hidden rounded-xl border border-slate-900 bg-slate-900/40">
         <table className="min-w-full divide-y divide-slate-900 text-left text-sm text-slate-200">
           <thead className="bg-slate-900/60 text-xs uppercase tracking-[0.25em] text-slate-400">
             <tr>
+              <th className="px-4 py-3">Select</th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Price</th>
               <th className="px-4 py-3">Duration</th>
@@ -157,6 +160,7 @@ function ServiceCollection({ items, variant, onEdit, onToggleActive, onDelete }:
           <tbody className="divide-y divide-slate-900/80">
             {items.map((s) => (
               <tr key={s.id} className="hover:bg-slate-900/40">
+                <td className="px-4 py-3"><input type="checkbox" checked={selectedIds.includes(s.id)} onChange={(e) => onToggleSelect?.(s.id, e.target.checked)} /></td>
                 <td className="px-4 py-3 text-white">{s.name}</td>
                 <td className="px-4 py-3">${(s.priceCents / 100).toFixed(2)}</td>
                 <td className="px-4 py-3">{s.durationMinutes} mins</td>
@@ -184,6 +188,9 @@ function ServiceCollection({ items, variant, onEdit, onToggleActive, onDelete }:
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {items.map((s) => (
         <div key={s.id} className="group relative">
+          <div className="absolute left-3 top-3 z-10">
+            <input type="checkbox" checked={selectedIds.includes(s.id)} onChange={(e) => onToggleSelect?.(s.id, e.target.checked)} />
+          </div>
           <ServiceCard service={s} />
           <div className="absolute right-3 top-3 hidden gap-2 group-hover:flex">
             <button className="rounded-full border border-slate-800 bg-slate-950/80 p-1 text-slate-300 hover:text-emerald-200" onClick={() => onEdit(s)} aria-label="Edit"><Pencil className="h-4 w-4" /></button>
@@ -229,6 +236,9 @@ export default function ServicesPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState<Service | null>(null);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const { notify } = useToast();
 
   // URL sync
   useEffect(() => {
@@ -266,15 +276,31 @@ export default function ServicesPage() {
         <EmptyState />
       ) : (
         <>
+          {selectedIds.length > 0 ? (
+            <div className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+              <div>{selectedIds.length} selected</div>
+              <div className="flex items-center gap-2">
+                <button className="inline-flex items-center gap-2 rounded-full border border-emerald-400/50 px-3 py-1.5 text-xs" onClick={() => setAssignOpen(true)}>
+                  <Tag className="h-4 w-4" /> Assign Category
+                </button>
+                <button className="rounded-full border border-slate-800 px-3 py-1.5 text-xs text-slate-200" onClick={() => setSelectedIds([])}>Clear</button>
+              </div>
+            </div>
+          ) : null}
           <ServiceCollection
             items={paged.items}
             variant={view}
+            selectedIds={selectedIds}
+            onToggleSelect={(id, checked) => setSelectedIds((prev) => (checked ? Array.from(new Set([...prev, id])) : prev.filter((x) => x !== id)))}
             onEdit={(s) => {
               setEditorMode('edit');
               setEditorInitial(s);
               setEditorOpen(true);
             }}
-            onToggleActive={(s) => toggleActive.mutate({ id: s.id, isActive: !s.isActive })}
+            onToggleActive={(s) => toggleActive.mutate(
+              { id: s.id, isActive: !s.isActive },
+              { onSuccess: () => notify({ type: 'success', message: 'Status updated' }), onError: () => notify({ type: 'error', message: 'Failed to update status' }) },
+            )}
             onDelete={(s) => { setToDelete(s); setConfirmOpen(true); }}
           />
           <div className="flex items-center justify-between gap-4">
@@ -319,11 +345,12 @@ export default function ServicesPage() {
         confirmLabel="Delete"
         onCancel={() => { setConfirmOpen(false); setToDelete(null); }}
         onConfirm={() => {
-          if (toDelete) deleteService.mutate(toDelete.id);
+          if (toDelete) deleteService.mutate(toDelete.id, { onSuccess: () => notify({ type: 'success', message: 'Service deleted' }), onError: () => notify({ type: 'error', message: 'Failed to delete service' }) });
           setConfirmOpen(false);
           setToDelete(null);
         }}
       />
+      <AssignCategoryDialog open={assignOpen} onClose={() => setAssignOpen(false)} selected={selectedIds} services={paged.items} />
       <CategoryManager open={categoriesOpen} onClose={() => setCategoriesOpen(false)} />
     </section>
   );

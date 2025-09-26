@@ -30,6 +30,7 @@ import {
   useAdminAppointments,
   useUpdateAppointmentStatus,
 } from "./hooks/useAdminAppointments";
+import { ToastHost } from "./ui/toast";
 import ServicesPage from "./pages/ServicesPage";
 
 interface AdminOutletContext {
@@ -237,6 +238,7 @@ function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      <ToastHost />
       <header className="border-b border-slate-900 bg-slate-950/80">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4">
           <div className="flex items-center gap-3">

@@ -310,10 +310,18 @@ export default function ServicesPage() {
         initial={editorInitial}
         onClose={() => setEditorOpen(false)}
         onSave={async (values) => {
+          const minimal = {
+            name: values.name,
+            description: values.description ?? null,
+            durationMinutes: values.durationMinutes,
+            priceCents: values.priceCents,
+            isActive: values.isActive,
+            categoryIds: values.categoryIds ?? [],
+          };
           if (editorMode === 'create') {
-            await createService.mutateAsync(values);
+            await createService.mutateAsync(minimal as any);
           } else if (editorInitial && editorInitial.id) {
-            await updateService.mutateAsync({ ...(values as Service), id: editorInitial.id });
+            await updateService.mutateAsync({ ...(minimal as any), id: editorInitial.id } as any);
           }
         }}
       />

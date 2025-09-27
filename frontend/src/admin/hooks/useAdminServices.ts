@@ -112,6 +112,15 @@ export function useUpdateService(params: ServicesQueryParams) {
       return { snapshots };
     },
     onError: (_err, _vars, ctx) => ctx?.snapshots?.forEach(({ q, data }) => q.setData(data)),
+    onSuccess: (updated) => {
+      const allQueries = qc.getQueryCache().findAll({ queryKey: ['admin', 'services'] });
+      allQueries.forEach((q) => {
+        const data = q.state.data as Paged<Service> | undefined;
+        if (!data) return;
+        const nextItems = data.items.map((s) => (s.id === updated.id ? { ...s, ...updated } : s));
+        qc.setQueryData(q.queryKey, { ...data, items: nextItems });
+      });
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: ['admin', 'services'] }),
   });
 }

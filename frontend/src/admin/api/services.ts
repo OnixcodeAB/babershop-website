@@ -76,7 +76,15 @@ export async function fetchAdminServices(params: ListParams): Promise<{ items: S
 
 export async function createAdminService(body: Omit<Service, 'id'> & { id?: string; categoryIds?: string[] }): Promise<Service> {
   try {
-    const res = await httpClient.post<ServiceDto>('/admin/services', body);
+    const payload: any = {
+      name: body.name,
+      description: body.description ?? null,
+      durationMinutes: body.durationMinutes,
+      priceCents: body.priceCents,
+      isActive: body.isActive,
+      categoryIds: body.categoryIds ?? [],
+    };
+    const res = await httpClient.post<ServiceDto>('/admin/services', payload);
     return map(res.data);
   } catch {
     // Fallback: return as-is with generated id to support optimistic UI
@@ -87,10 +95,18 @@ export async function createAdminService(body: Omit<Service, 'id'> & { id?: stri
 
 export async function updateAdminService(service: Service & { categoryIds?: string[] }): Promise<Service> {
   try {
-    const res = await httpClient.patch<ServiceDto>(`/admin/services/${service.id}`, service);
+    const payload: any = {
+      name: service.name,
+      description: service.description ?? null,
+      durationMinutes: service.durationMinutes,
+      priceCents: service.priceCents,
+      isActive: service.isActive,
+      ...(service.categoryIds ? { categoryIds: service.categoryIds } : {}),
+    };
+    const res = await httpClient.patch<ServiceDto>(`/admin/services/${service.id}`, payload);
     return map(res.data);
-  } catch {
-    return service;
+  } catch (err) {
+    throw err;
   }
 }
 
@@ -105,7 +121,7 @@ export async function deleteAdminService(id: string): Promise<void> {
 export async function toggleAdminServiceActive(id: string, isActive: boolean): Promise<void> {
   try {
     await httpClient.patch(`/admin/services/${id}`, { isActive });
-  } catch {
-    // ignore in fallback
+  } catch (err) {
+    throw err;
   }
 }

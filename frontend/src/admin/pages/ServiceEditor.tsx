@@ -118,32 +118,25 @@ export default function ServiceEditor({ open, mode, initial, onClose, onSave }: 
             </div>
           </div>
           <div>
-            <label className="mb-2 block text-sm text-slate-300">Categories</label>
+            <label className="mb-2 block text-sm text-slate-300">Category</label>
             {categoriesQuery.isLoading ? (
               <p className="text-xs text-slate-400">Loading categories…</p>
             ) : categories.length === 0 ? (
               <p className="text-xs text-slate-500">No categories yet.</p>
             ) : (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {categories.map((c) => {
-                  const checked = (initial as any)?.categories?.some?.((x: any) => x.id === c.id) || false;
-                  return (
-                    <label key={c.id} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        defaultChecked={checked}
-                        onChange={(e) => {
-                          const current = new Set<string>(((draft as any).categoryIds as string[] | undefined) ?? ((initial as any)?.categories?.map?.((x: any) => x.id) ?? []));
-                          if (e.target.checked) current.add(c.id); else current.delete(c.id);
-                          (setDraft as any)((d: any) => ({ ...d, categoryIds: Array.from(current) }));
-                        }}
-                        className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-emerald-500"
-                      />
-                      <span>{c.name}</span>
-                    </label>
-                  );
-                })}
-              </div>
+              <select
+                value={(draft.categoryIds && draft.categoryIds[0]) ?? ((initial as any)?.categories?.[0]?.id ?? '')}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setDraft((d) => ({ ...d, categoryIds: value ? [value] : [] } as Draft));
+                }}
+                className="w-full rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="">Unassigned</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
             )}
           </div>
           <div className="flex items-center gap-2">

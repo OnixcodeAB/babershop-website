@@ -19,9 +19,8 @@ export default function AssignCategoryDialog({ open, onClose, selected, services
       selected.map(async (id) => {
         const svc = currentMap.get(id);
         if (!svc) return;
-        const existing = (svc.categories ?? []).map((c) => c.id);
-        const next = Array.from(new Set([...existing, categoryId]));
-        await updateService.mutateAsync({ ...(svc as any), categoryIds: next });
+        // Replace with single selected category for simplicity
+        await updateService.mutateAsync({ ...(svc as any), categoryIds: [categoryId] });
       }),
     );
     onClose();
@@ -53,4 +52,3 @@ export default function AssignCategoryDialog({ open, onClose, selected, services
     </div>
   );
 }
-

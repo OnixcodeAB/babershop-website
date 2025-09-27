@@ -135,15 +135,21 @@ const adminServicesRoutes: FastifyPluginAsync = async (fastify) => {
       if (Array.isArray(body.data.categoryIds)) {
         updateData.categories = { set: body.data.categoryIds.map((id) => ({ id })) };
       }
+      // Remove non-model property to avoid Prisma unknown-arg error
+      if ('categoryIds' in updateData) {
+        delete updateData.categoryIds;
+      }
       const updated = await fastify.prisma.service.update({
         where: { id: params.data.id },
         data: updateData,
         include: { categories: true },
       });
       return serializeService(updated);
-    } catch (error) {
-      reply.code(404);
-      return { error: { message: 'Service not found' } };
+    } catch (error: any) {
+      // Differentiate not-found vs bad relation input when possible
+      const msg = typeof error?.code === 'string' && error.code === 'P2025' ? 'Service not found' : 'Invalid update';
+      reply.code(msg === 'Service not found' ? 404 : 400);
+      return { error: { message: msg } };
     }
   });
 

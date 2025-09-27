@@ -237,9 +237,9 @@ function AdminLayout() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <ToastHost />
-      <header className="border-b border-slate-900 bg-slate-950/80">
+    <ToastHost>
+      <div className="min-h-screen bg-slate-950 text-slate-100">
+        <header className="border-b border-slate-900 bg-slate-950/80">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-lg text-emerald-300">
@@ -335,8 +335,9 @@ function AdminLayout() {
         <main className="mt-6 lg:mt-0 lg:col-start-2 lg:row-start-1 flex-1 space-y-6">
           <Outlet context={{ user }} />
         </main>
+        </div>
       </div>
-    </div>
+    </ToastHost>
   );
 }
 

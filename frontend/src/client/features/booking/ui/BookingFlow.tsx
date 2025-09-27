@@ -268,11 +268,27 @@ export function BookingFlow() {
         });
       }
     });
+
     const groups: { category: string; services: Service[] }[] = [];
-    cats.forEach((c) => {
-      const bucket = byCatId[c.id] ?? [];
-      if (bucket.length > 0) groups.push({ category: c.name, services: bucket.sort((a, b) => a.name.localeCompare(b.name)) });
-    });
+
+    if (cats.length > 0) {
+      // Preferred ordering from backend
+      cats.forEach((c) => {
+        const bucket = byCatId[c.id] ?? [];
+        if (bucket.length > 0) groups.push({ category: c.name, services: bucket.sort((a, b) => a.name.localeCompare(b.name)) });
+      });
+    } else {
+      // Fallback: build categories from services themselves (sorted by name)
+      const uniqueCats = new Map<string, string>();
+      services.forEach((s) => (s.categories ?? []).forEach((c) => uniqueCats.set(c.id, c.name)));
+      Array.from(uniqueCats.entries())
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .forEach(([id, name]) => {
+          const bucket = byCatId[id] ?? [];
+          if (bucket.length > 0) groups.push({ category: name, services: bucket.sort((a, b) => a.name.localeCompare(b.name)) });
+        });
+    }
+
     if (byCatId['__other__'] && byCatId['__other__'].length > 0) {
       groups.push({ category: 'Other Services', services: byCatId['__other__'].sort((a, b) => a.name.localeCompare(b.name)) });
     }
